@@ -2067,6 +2067,18 @@ def test_can_call_current_request_on_blueprint_when_mounted(create_event):
     assert isinstance(response, dict)
     assert response['method'] == 'GET'
 
+def test_can_call_current_app_on_blueprint_when_mounted(create_event):
+    myapp = app.Chalice('myapp')
+    bp = app.Blueprint('app.chalicelib.blueprints.foo')
+
+    @bp.route('/app-name')
+    def get_app_name():
+        return {'name': bp.current_app.app_name}
+
+    myapp.register_blueprint(bp)
+    event = create_event('/app-name', 'GET', {})
+    response = json_response_body(myapp(event, context=None))
+    assert response == {'name': 'myapp'}
 
 def test_can_call_lambda_context_on_blueprint_when_mounted(create_event):
     myapp = app.Chalice('myapp')
