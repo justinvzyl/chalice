@@ -53,11 +53,11 @@ def _configure_logging(level, format_string=None):
     logger.addHandler(handler)
 
 
-def create_new_project_skeleton(project_name, profile=None):
-    # type: (str, Optional[str]) -> None
-    chalice_dir = os.path.join(project_name, '.chalice')
+def create_new_project_skeleton(project_name, project_dir, profile=None):
+    # type: (str, str, Optional[str]) -> None
+    chalice_dir = os.path.join(project_dir, project_name, '.chalice')
     os.makedirs(chalice_dir)
-    config = os.path.join(project_name, '.chalice', 'config.json')
+    config = os.path.join(project_dir, project_name, '.chalice', 'config.json')
     cfg = {
         'version': CONFIG_VERSION,
         'app_name': project_name,
@@ -71,11 +71,11 @@ def create_new_project_skeleton(project_name, profile=None):
         cfg['profile'] = profile
     with open(config, 'w') as f:
         f.write(serialize_to_json(cfg))
-    with open(os.path.join(project_name, 'requirements.txt'), 'w'):
+    with open(os.path.join(project_dir, project_name, 'requirements.txt'), 'w'):
         pass
-    with open(os.path.join(project_name, 'app.py'), 'w') as f:
+    with open(os.path.join(project_dir, project_name, 'app.py'), 'w') as f:
         f.write(TEMPLATE_APP % project_name)
-    with open(os.path.join(project_name, '.gitignore'), 'w') as f:
+    with open(os.path.join(project_dir, project_name, '.gitignore'), 'w') as f:
         f.write(GITIGNORE)
 
 
@@ -424,14 +424,19 @@ def gen_policy(ctx, filename):
 @cli.command('new-project')
 @click.argument('project_name', required=False)
 @click.option('--profile', required=False)
-def new_project(project_name, profile):
-    # type: (str, str) -> None
+@click.option('--project-dir', default=None,
+              help=('The project directory path (absolute or relative).'
+                    'Defaults to CWD'))
+def new_project(project_name, profile, project_dir):
+    # type: (str, str, str) -> None
     if project_name is None:
         project_name = getting_started_prompt(click)
-    if os.path.isdir(project_name):
+    if project_dir is None:
+        project_dir = os.getcwd()
+    if os.path.isdir(os.path.join(project_dir, project_name)):
         click.echo("Directory already exists: %s" % project_name, err=True)
         raise click.Abort()
-    create_new_project_skeleton(project_name, profile)
+    create_new_project_skeleton(project_name, project_dir, profile)
     validate_python_version(Config.create())
 
 
